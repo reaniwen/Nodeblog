@@ -53,8 +53,8 @@ Post.prototype.save = function(callback) {
 	});
 };
 
-//get post
-Post.get = function(name, callback) {
+//get posts
+Post.getAll = function(name, callback) {
 	//open db
 	mongodb.open(function (err, db) {
 		if (err) {
@@ -89,3 +89,89 @@ Post.get = function(name, callback) {
 	});
 };
 
+Post.getOne = function(name, day, title, callback) {
+	mongodb.open(function(err, db) {
+		if(err) {
+			return callback(err);
+		}
+
+		db.collection('posts', function (err, collection) {
+			if(err) {
+				mongodb.close();
+				return callback(err);
+			}
+			collection.findOne({
+				"name": name,
+				"time.day": day,
+				"title": title
+			}, function (err, doc) {
+				mongodb.close();
+				if(err) {
+					return callback(err);
+				}
+
+				doc.post = markdown.toHTML(doc.post);
+				callback(null, doc);
+			});
+		});
+	});
+};
+
+// Edit an article
+Post.edit = function(name, day, title, callback) {
+	mongodb.open(function (err, db) {
+		if(err) {
+			return callback(err);
+		}
+
+		db.collection('posts', function (err, collection) {
+			if(err) {
+				mongodb.close();
+				return callback(err);
+			}
+			// query the article
+			collection.findOne({
+				'name': name,
+				'time.day': day,
+				'title': title,
+			}, function(err, doc) {
+				mongodb.close();
+				if(err) {
+					return callback(err);
+				}
+				callback(null, doc);
+			});
+		});
+	});
+};
+
+// Delete an article
+Post.remove = function(name, day, title, callback) {
+	//打开数据库
+	mongodb.open(function (err, db) {
+		if (err) {
+			return callback(err);
+		}
+		//读取 posts 集合
+		db.collection('posts', function (err, collection) {
+			if (err) {
+				mongodb.close();
+				return callback(err);
+			}
+		//根据用户名、日期和标题查找并删除一篇文章
+		collection.remove({
+			"name": name,
+			"time.day": day,
+			"title": title
+		}, {
+			w: 1
+		}, function (err) {
+			mongodb.close();
+			if (err) {
+				return callback(err);
+			}
+			callback(null);
+			});
+		});
+	});
+};
